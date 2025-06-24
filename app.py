@@ -8,9 +8,9 @@ to see the model score at that spot.
 Designed for quick proof-of-concept – runs in ~2-3 min cold-start
 inside the Cloud Run container.  Not optimised for large-scale use!
 """
-
-import os, io, zipfile, warnings, functools, tempfile
 import numpy as np, pandas as pd, requests, streamlit as st, pydeck as pdk
+st.set_page_config(layout="wide")
+import os, io, zipfile, warnings, functools, tempfile
 from shapely.geometry import Point, MultiPoint
 from shapely.ops import unary_union
 from pyproj import Transformer
@@ -25,7 +25,6 @@ with st.spinner("Loading geospatial libraries…"):
     from rasterio.merge import merge
     from rasterio.warp import calculate_default_transform, reproject, Resampling
 
-st.set_page_config(layout="wide")
 st.title("🦉 Great Gray Owl – habitat suitability in Yosemite NP")
 
 ###############################################################################
