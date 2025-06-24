@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-shot script: build container, push to Artifact Registry, deploy to Cloud Run.
 
-PROJECT_ID=<ggoheatmap>
+PROJECT_ID=ggoheatmap
 REGION=us-central1
 IMAGE_NAME=owl-habitat
 SERVICE=owl-habitat
