@@ -1,5 +1,5 @@
 # -------- base image with GDAL/PROJ pre-installed ---------------------------
-    FROM osgeo/gdal:ubuntu-small-latest
+    FROM ghcr.io/OSGeo/gdal:ubuntu-small-latest
 
     ENV PYTHONDONTWRITEBYTECODE=1 \
         PYTHONUNBUFFERED=1 \
