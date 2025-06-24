@@ -1,24 +1,27 @@
 #!/usr/bin/env bash
-# One-shot script: build container, push to Artifact Registry, deploy to Cloud Run.
+# Build the container, push to Artifact Registry, deploy to Cloud Run.
 
-PROJECT_ID=ggoheatmap
+PROJECT_ID=ggoheatmap          #  ← your project
 REGION=us-central1
-IMAGE_NAME=owl-habitat
+REPO=my-repo
+IMAGE=owl-habitat
 SERVICE=owl-habitat
 
+set -e
+
 gcloud config set project "$PROJECT_ID"
-gcloud services enable run.googleapis.com artifactregistry.googleapis.com
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
 
-# Create a repo if it doesn't exist
-gcloud artifacts repositories describe my-repo --location=$REGION 2>/dev/null \
-  || gcloud artifacts repositories create my-repo --repository-format=docker \
-       --location=$REGION --description="Docker repo"
+# create repo if missing
+gcloud artifacts repositories describe $REPO --location=$REGION >/dev/null 2>&1 \
+  || gcloud artifacts repositories create $REPO --repository-format=docker --location=$REGION \
+       --description="Docker repo"
 
-# Build & push
-gcloud builds submit --tag "$REGION-docker.pkg.dev/$PROJECT_ID/my-repo/$IMAGE_NAME:latest"
+# build & push
+gcloud builds submit --tag "$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE:latest"
 
-# Deploy
+# deploy
 gcloud run deploy "$SERVICE" \
-  --image="$REGION-docker.pkg.dev/$PROJECT_ID/my-repo/$IMAGE_NAME:latest" \
-  --platform=managed --region="$REGION" \
-  --allow-unauthenticated --memory=2Gi --timeout=15m
+  --image "$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE:latest" \
+  --region "$REGION" --platform managed \
+  --allow-unauthenticated --memory 2Gi --timeout 15m

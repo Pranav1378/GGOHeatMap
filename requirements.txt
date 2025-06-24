@@ -8,4 +8,5 @@ pyproj
 geopandas
 rasterio>=1.3.0
 osmnx
-matplotlib   # just for colour map
+matplotlib           # only used for the colour map
+joblib

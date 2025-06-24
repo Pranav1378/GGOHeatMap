@@ -1,36 +1,31 @@
-# --- Base image with GDAL/PROJ ---
+# --- Base image with GDAL/PROJ ------------------------------------------------
     FROM ghcr.io/osgeo/gdal:ubuntu-small-latest
 
-    # --- System deps: venv + pip ---
     USER root
     RUN apt-get update \
-     && apt-get install -y python3-venv python3-pip unzip \
+     && apt-get install -y python3-venv python3-pip unzip git \
      && rm -rf /var/lib/apt/lists/*
     
-    # --- Python virtual-env ---
+    # --- Python venv --------------------------------------------------------------
     RUN python3 -m venv /opt/venv
-    ENV PATH="/opt/venv/bin:$PATH"
-    ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-        LC_ALL=C.UTF-8 LANG=C.UTF-8 PYDECK_HEADLESS=1
+    ENV PATH="/opt/venv/bin:$PATH" \
+        PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+        PYDECK_HEADLESS=1 LC_ALL=C.UTF-8 LANG=C.UTF-8
     
-    # --- Python deps ---
-    COPY requirements.txt /tmp/
+    # --- install deps -------------------------------------------------------------
+    COPY requirements.txt /tmp/req.txt
     RUN pip install --upgrade pip \
-     && pip install --no-cache-dir -r /tmp/requirements.txt
+     && pip install --no-cache-dir -r /tmp/req.txt
     
-    # --- Run training at build time ---
+    # --- run training at build time ----------------------------------------------
     COPY train.py /app/train.py
     WORKDIR /app
-    RUN python train.py          # <— writes model.pkl, grid.csv, obs.csv
+    RUN python train.py          # writes model.pkl, grid.csv, obs.csv
     
-    # --- Copy lightweight Streamlit app ---
+    # --- copy tiny UI app ---------------------------------------------------------
     COPY app.py /app/app.py
     
     EXPOSE 8080
     ENV PORT=8080
-    ENV STREAMLIT_SERVER_MAX_UPLOAD_SIZE=200
-    ENV STREAMLIT_SERVER_ENABLE_STATIC_SERVING=true
-    ENV STREAMLIT_SERVER_ENABLE_CORS=false
-    ENV STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
-    CMD ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0", "--server.timeout=300"]
+    CMD ["streamlit","run","app.py","--server.port=8080","--server.address=0.0.0.0"]
     
