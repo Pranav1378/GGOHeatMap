@@ -11,7 +11,7 @@
     
     # Install Python deps
     COPY requirements.txt /tmp/req.txt
-    RUN pip install --no-cache-dir -r /tmp/req.txt
+    RUN python3 -m pip install --no-cache-dir -r /tmp/req.txt
     
     # Copy app
     COPY app.py /app/app.py
