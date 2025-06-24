@@ -28,7 +28,11 @@ st.title("🦉 Great Gray Owl – habitat suitability in Yosemite NP")
 ###############################################################################
 @st.cache_resource(show_spinner=True, ttl=24*3600)      # reuse for a day
 def build_model_and_layers():
+    # Add more granular progress updates
+    progress_bar = st.progress(0)
+    
     st.info("Step 1/5 – Downloading owl observations from iNaturalist…")
+    progress_bar.progress(20)
     TAXON_ID = 19890
     BBOX = "37.5,-120,38.2,-119"
     obs_url = (
@@ -48,11 +52,13 @@ def build_model_and_layers():
     )
 
     st.info("Step 2/5 – Building Yosemite bounding polygon…")
+    progress_bar.progress(40)
     lat_min, lon_min, lat_max, lon_max = 37.5, -120, 38.2, -119
     from shapely.geometry import box
     park_poly = box(lon_min, lat_min, lon_max, lat_max)
 
     st.info("Step 3/5 – Downloading and mosaicking SRTM DEM tiles…")
+    progress_bar.progress(60)
     tiles = ["N37W120", "N38W120", "N37W119", "N38W119"]
     srcs  = []
     for t in tiles:
@@ -75,6 +81,7 @@ def build_model_and_layers():
     slope = np.degrees(np.arctan(np.hypot(dzdy,dzdx)))
 
     st.info("Step 4/5 – Fetching OSM water & road layers…")
+    progress_bar.progress(80)
     n,s,e,w = lat_max+.02, lat_min-.02, lon_max+.02, lon_min-.02
     water = ox.geometries_from_bbox(n,s,e,w, {"natural":["water"],"waterway":True})
     roads = ox.geometries_from_bbox(n,s,e,w, {"highway":True})
@@ -87,6 +94,7 @@ def build_model_and_layers():
     obs_u   = gdf_obs.to_crs(EPSG_UTM)
 
     st.info("Step 5/5 – Training Random-Forest and building heat-map grid…")
+    progress_bar.progress(90)
     tf_fwd  = Transformer.from_crs("EPSG:4326", EPSG_UTM, always_xy=True)
     tf_back = Transformer.from_crs(EPSG_UTM, "EPSG:4326", always_xy=True)
 
@@ -116,7 +124,12 @@ def build_model_and_layers():
     dfb = pd.DataFrame(bg,columns=dfp.columns); dfb["label"]=0
     df  = pd.concat([dfp,dfb],ignore_index=True)
     X,y = df.drop("label",axis=1).values, df.label.values
-    rf  = RandomForestClassifier(n_estimators=150,class_weight="balanced",random_state=42)
+    rf = RandomForestClassifier(
+        n_estimators=50,  # Reduced from 150
+        class_weight="balanced",
+        random_state=42,
+        n_jobs=-1  # Use all CPU cores
+    )
     rf.fit(X,y)
 
     # 500 m grid
@@ -130,6 +143,9 @@ def build_model_and_layers():
             gprob.append(rf.predict_proba([fvec(lat,lon)])[0,1])
     grid = pd.DataFrame({"lon":glon,"lat":glat,"prob":gprob})
 
+    progress_bar.progress(100)
+    st.success("Model ready!")
+    
     return {"rf":rf, "fvec":fvec, "grid":grid, "obs":gdf_obs}
 
 data = build_model_and_layers()
