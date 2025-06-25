@@ -5,7 +5,7 @@ Downloads open data, trains Random-Forest, writes:
   • model.pkl      • grid.csv      • obs.csv
 Run locally once to test:  python train.py
 """
-import io, zipfile, requests, joblib, warnings, json
+import io, zipfile, requests, joblib, warnings, json, tempfile
 import numpy as np, pandas as pd, geopandas as gpd, rasterio
 from rasterio.merge import merge
 from shapely.geometry import Point, box
