@@ -7,6 +7,7 @@ Run locally once to test:  python train.py
 """
 import io, zipfile, requests, joblib, warnings, json, tempfile
 import numpy as np, pandas as pd, geopandas as gpd, rasterio
+from rasterio.io import MemoryFile
 from rasterio.merge import merge
 from shapely.geometry import Point, box
 from pyproj import Transformer
@@ -41,10 +42,9 @@ for t in tiles:
     with zipfile.ZipFile(io.BytesIO(z)) as zz:
         hgt = zz.namelist()[0]
         data = zz.read(hgt)
-        with tempfile.NamedTemporaryFile(suffix=".hgt") as tmp:
-            tmp.write(data)
-            tmp.flush()
-            srcs.append(rasterio.open(tmp.name, driver="SRTMHGT"))
+        # Use MemoryFile instead of temporary file
+        mem = rasterio.io.MemoryFile(data)
+        srcs.append(mem.open(driver="SRTMHGT"))
 if not srcs: raise RuntimeError("No DEM tiles")
 mosaic, trans = merge(srcs); dem = mosaic[0]
 lat_c = 37.9
