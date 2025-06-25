@@ -120,7 +120,7 @@ with col2:
     if not grid_data.empty:
         # Color mapping
         norm = mcolors.Normalize(0, 1)
-        cmap = cm.colormaps["viridis"]
+        cmap = cm.get_cmap("viridis")
         rgba = (cmap(norm(grid_data["prob"])) * 255).astype(int)
         
         grid_viz = grid_data.copy()
@@ -158,19 +158,32 @@ with col2:
         )
         
         # Render map
+        tooltip_text = "Habitat Probability: {prob:.2f}\nElevation: {elev:.0f}m\nSlope: {slope:.1f}°"
+        
+        # Add bias information if available
+        if 'bias_factor' in grid_data.columns:
+            tooltip_text += "\nProximity Bias: {bias_factor:.2f}x"
+        if 'base_prob' in grid_data.columns:
+            tooltip_text += "\nBase Probability: {base_prob:.2f}"
+        
         deck = pdk.Deck(
             layers=[heat_layer, obs_layer],
             initial_view_state=view_state,
-            tooltip={
-                "text": "Habitat Probability: {prob:.2f}\nElevation: {elev:.0f}m\nSlope: {slope:.1f}°"
-            }
+            tooltip={"text": tooltip_text}
         )
         
         st.pydeck_chart(deck)
         
         # Legend
         st.caption("🟢🟡🔴 **Color Scale:** Green = High suitability, Yellow = Medium, Purple = Low")
-        st.caption("🔴 **Red dots:** Known Great Gray Owl sightings from iNaturalist")
+        st.caption("🔴 **Red dots:** Known Great Gray Owl sightings from iNaturalist & GBIF")
+        
+        # Show proximity bias info if available
+        if 'bias_factor' in grid_data.columns:
+            avg_bias = grid_data['bias_factor'].mean()
+            max_bias = grid_data['bias_factor'].max()
+            high_bias_count = len(grid_data[grid_data['bias_factor'] > 1.5])
+            st.caption(f"📍 **Proximity Bias:** {high_bias_count} locations boosted near real observations (avg: {avg_bias:.2f}x, max: {max_bias:.2f}x)")
         
         # Statistics
         col_a, col_b, col_c = st.columns(3)
@@ -193,14 +206,20 @@ with st.expander("ℹ️ About This Model"):
     - **Distance to Roads**: Owls prefer areas away from human disturbance
     - **Distance to Water**: Proximity to water bodies increases prey availability
     
+    **Proximity Bias System:**
+    - **Real Observations**: Areas within 5km of actual iNaturalist/GBIF sightings get boosted probability
+    - **Distance Weighting**: Closer to real sightings = higher boost (up to 2x probability)
+    - **Conservative Approach**: Only verified, research-grade observations used for bias
+    - **Smart Filtering**: Distinguishes between real sightings and literature locations
+    
     **Data Sources:**
-    - Owl observations: iNaturalist research-grade records
-    - Elevation: SRTM digital elevation model
-    - Infrastructure: OpenStreetMap
+    - **Real Owl Observations**: iNaturalist & GBIF research-grade records from Yosemite
+    - **Environmental Data**: Yosemite-specific elevation, slope, and infrastructure modeling
+    - **Literature Locations**: Documented Great Gray Owl sites from scientific papers
     
-    **Model**: Random Forest classifier trained on presence/background sampling
+    **Model**: Random Forest classifier + proximity-weighted habitat suitability
     
-    **Note**: This is a demonstration model for educational purposes.
+    **Focus Area**: Yosemite National Park (37.5-38.2°N, 119.0-120.0°W)
     """)
 
 # Footer
