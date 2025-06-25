@@ -39,8 +39,12 @@ for t in tiles:
     z = requests.get(f"https://srtm.kurviger.de/SRTM1/Region_01/{t}.hgt.zip",timeout=60).content
     if not z.startswith(b"PK"): continue
     with zipfile.ZipFile(io.BytesIO(z)) as zz:
-        mem = rasterio.io.MemoryFile(zz.read(zz.namelist()[0]))
-        srcs.append(mem.open(driver="SRTMHGT"))
+        hgt = zz.namelist()[0]
+        data = zz.read(hgt)
+        with tempfile.NamedTemporaryFile(suffix=".hgt") as tmp:
+            tmp.write(data)
+            tmp.flush()
+            srcs.append(rasterio.open(tmp.name, driver="SRTMHGT"))
 if not srcs: raise RuntimeError("No DEM tiles")
 mosaic, trans = merge(srcs); dem = mosaic[0]
 lat_c = 37.9
