@@ -1,0 +1,25 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/owl-habitat-repo/owl-habitat-app:latest', '.']
+  
+  # Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/owl-habitat-repo/owl-habitat-app:latest']
+  
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'owl-habitat'
+      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/owl-habitat-repo/owl-habitat-app:latest'
+      - '--region=us-central1'
+      - '--allow-unauthenticated'
+      - '--memory=2Gi'
+      - '--platform=managed'
+
+# Enable required APIs
+options:
+  logging: CLOUD_LOGGING_ONLY 

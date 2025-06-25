@@ -3,11 +3,6 @@ pydeck==0.8.1b0
 numpy
 pandas
 scikit-learn
-shapely>=2.0
-pyproj
-geopandas
-rasterio>=1.3.0
-osmnx>=1.6.0
-matplotlib         # only used for the colour map
+matplotlib
 joblib
-requests           # for all the HTTP downloads
+requests

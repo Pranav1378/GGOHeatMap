@@ -1,31 +1,33 @@
-# --- Base image with GDAL/PROJ ------------------------------------------------
-    FROM ghcr.io/osgeo/gdal:ubuntu-small-latest
+FROM python:3.11-slim
 
-    USER root
-    RUN apt-get update \
-     && apt-get install -y python3-venv python3-pip unzip git \
-     && rm -rf /var/lib/apt/lists/*
-    
-    # --- Python venv --------------------------------------------------------------
-    RUN python3 -m venv /opt/venv
-    ENV PATH="/opt/venv/bin:$PATH" \
-        PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-        PYDECK_HEADLESS=1 LC_ALL=C.UTF-8 LANG=C.UTF-8
-    
-    # --- install deps -------------------------------------------------------------
-    COPY requirements.txt /tmp/req.txt
-    RUN pip install --upgrade pip \
-     && pip install --no-cache-dir -r /tmp/req.txt
-    
-    # --- run training at build time ----------------------------------------------
-    COPY train.py /app/train.py
-    WORKDIR /app
-    RUN python train.py          # writes model.pkl, grid.csv, obs.csv
-    
-    # --- copy tiny UI app ---------------------------------------------------------
-    COPY app.py /app/app.py
-    
-    EXPOSE 8080
-    ENV PORT=8080
-    CMD ["streamlit","run","app.py","--server.port=8080","--server.address=0.0.0.0"]
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    STREAMLIT_SERVER_HEADLESS=true \
+    STREAMLIT_SERVER_PORT=8080
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python packages
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy training script and run it to create model artifacts
+COPY train.py .
+RUN python train.py
+
+# Copy the main app
+COPY app.py .
+
+# Expose port
+EXPOSE 8080
+
+# Run the Streamlit app
+CMD ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]
     
