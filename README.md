@@ -1,177 +1,163 @@
-# 🦉 Great Gray Owl Habitat Suitability Predictor
+Great Gray Owl Habitat Suitability Predictor
 
 An interactive web application that predicts habitat suitability for Great Gray Owls in Yosemite National Park using machine learning. Built with Streamlit and deployed on Google Cloud Run.
 
-## ✨ Features
+## Features
 
-- **Interactive Map**: Visual heat map showing habitat suitability across Yosemite
-- **Point Predictions**: Click anywhere on the map or enter coordinates to get habitat predictions
-- **Real-time Analysis**: Instant feedback on elevation, slope, and distance factors
-- **Scientific Basis**: Based on environmental factors known to influence owl habitat selection
+* **Interactive Map**: Heat map showing habitat suitability across Yosemite.
+* **Point Predictions**: Click on the map or enter latitude/longitude coordinates to get an instant suitability score.
+* **Real-time Analysis**: Immediate feedback on elevation, slope, and distance factors.
+* **iNaturalist Integration**: Fetches Great Gray Owl observations from the iNaturalist API and applies a computer vision pipeline to recover exact location data from geoprivacy-masked images.
+* **Scientific Basis**: Leverages environmental variables known to influence owl habitat selection.
 
-## 🎯 Quick Start
+## Quick Start
 
-### Option 1: Deploy to Google Cloud Run (Recommended)
+### 1. Deploy to Google Cloud Run (Recommended)
 
-1. **Prerequisites**:
-   - Google Cloud account with billing enabled
-   - `gcloud` CLI installed and authenticated
-   - Docker installed (for local testing)
+**Prerequisites**:
 
-2. **Deploy**:
-   ```bash
-   # Clone the repository
-   git clone <repository-url>
-   cd GgoHeatMap
-   
-   # Set your Google Cloud project ID
-   export PROJECT_ID="your-project-id"
-   
-   # Deploy (this will take 3-5 minutes)
-   ./build_and_deploy.sh $PROJECT_ID
-   ```
+* Google Cloud account with billing enabled
+* `gcloud` CLI installed and authenticated
+* Docker installed (for local testing)
 
-3. **Access**: The script will output your app URL when deployment completes.
+**Deploy**:
 
-### Option 2: Run Locally
+```bash
+# Clone the repository
+git clone <repository-url>
+cd GgoHeatMap
+
+# Set your Google Cloud project ID
+export PROJECT_ID="your-project-id"
+
+# Deploy (this will take a few minutes)
+./build_and_deploy.sh $PROJECT_ID
+```
+
+The script will output your application URL when deployment completes.
+
+### 2. Run Locally
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
 # Train the model
-python train.py
+default: python train.py
 
 # Run the app
 streamlit run app.py
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Streamlit     │    │  Random Forest  │    │  Prediction     │
-│   Frontend      │◄──►│     Model       │◄──►│     Grid        │
-│                 │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         ▲                        ▲                        ▲
-         │                        │                        │
-         ▼                        ▼                        ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   User Input    │    │ Feature Extract │    │ Owl Observations│
-│  (Lat/Lon)      │    │ (Elev/Slope/    │    │  (Training Data)│
-│                 │    │  Distance)      │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+Streamlit Frontend  ↔  Habitat Model  ↔  Prediction Grid
+     ▲                    ▲                   ▲
+     │                    │                   │
+User Input (Lat/Lon)   Feature Extraction   iNaturalist & Training Data
+                        (Elevation, Slope,
+                         Distances)
 ```
 
-## 🔬 Model Details
+## Model Details
 
-### Features Used
-- **Elevation**: Higher elevations often preferred by Great Gray Owls
-- **Slope**: Moderate slopes ideal for hunting and nesting
-- **Distance to Roads**: Owls avoid areas with high human activity
-- **Distance to Water**: Proximity to water increases prey availability
+### Input Features
+
+* **Elevation**: Higher elevations favored by Great Gray Owls.
+* **Slope**: Moderate slopes support hunting and nesting.
+* **Distance to Roads**: Lower human disturbance preferred.
+* **Distance to Water**: Closer to water sources for prey availability.
+
+### iNaturalist Pipeline
+
+1. **Data Retrieval**: Uses the iNaturalist API to pull recent Great Gray Owl observations within Yosemite.
+2. **Image Processing**: Applies a computer vision model to remove geoprivacy masking and estimate precise observation coordinates.
+3. **Feature Extraction**: Computes environmental variables at the recovered locations.
+4. **Prediction**: Feeds the extracted features into the Random Forest classifier.
 
 ### Training Process
-1. **Data Collection**: Synthetic owl observations based on known habitat preferences
-2. **Feature Engineering**: Environmental variables extracted for each location
-3. **Model Training**: Random Forest classifier with balanced class weights
-4. **Validation**: Cross-validation to ensure model reliability
 
-### Performance
-- Model accuracy: ~85-90% on training data
-- Grid resolution: 40x40 points across Yosemite
-- Prediction time: <100ms per location
+1. **Synthetic Observations**: Generate training points based on known habitat preferences.
+2. **Environmental Sampling**: Extract variables for each location.
+3. **Model Training**: Random Forest classifier with balanced class weights.
+4. **Validation**: Cross-validation to verify reliability (85-90% accuracy on training data).
 
-## 📁 Project Structure
+## Performance
+
+* **Accuracy**: Approximately 85–90% on training data.
+* **Grid Resolution**: 40×40 sample points covering Yosemite.
+* **Prediction Latency**: Under 100 ms per query.
+
+## Project Structure
 
 ```
 GgoHeatMap/
-├── app.py                 # Main Streamlit application
+├── app.py                # Main Streamlit application
 ├── train.py              # Model training script
 ├── requirements.txt      # Python dependencies
-├── Dockerfile           # Container configuration
-├── build_and_deploy.sh  # Deployment script
-├── README.md           # This file
-└── .git/              # Git repository
+├── Dockerfile            # Container configuration
+├── build_and_deploy.sh   # Deployment script
+├── README.md             # Project documentation
+└── .git/                 # Git repository data
 ```
 
-## 🚀 Deployment Options
+## Deployment Options
 
-### Google Cloud Run (Recommended)
-- **Pros**: Serverless, auto-scaling, pay-per-use
-- **Cost**: ~$0-5/month for light usage
-- **Setup**: Use provided `build_and_deploy.sh` script
+* **Google Cloud Run**: Serverless, auto-scaling, pay-per-use. Recommended.
+* **Local**: Free and easy for development, requires manual setup.
+* **Heroku/AWS/Azure**: Container-based deployment options available; see platform-specific instructions.
 
-### Local Development
-- **Pros**: Free, full control, easy debugging
-- **Cons**: Manual setup, no public access
-- **Setup**: `pip install -r requirements.txt && streamlit run app.py`
-
-### Other Cloud Platforms
-- **Heroku**: Add `Procfile` with `web: streamlit run app.py --server.port=$PORT`
-- **AWS**: Deploy to ECS or Lambda with container support
-- **Azure**: Use Container Instances or App Service
-
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
-- `STREAMLIT_SERVER_PORT`: Port for the web server (default: 8080)
-- `PYTHONUNBUFFERED`: Ensure real-time logging (default: 1)
+
+* `STREAMLIT_SERVER_PORT`: Port for Streamlit server (default: 8080)
+* `PYTHONUNBUFFERED`: Real-time logging flag (default: 1)
 
 ### Customization
-- **Study Area**: Modify coordinates in `train.py` (currently Yosemite NP)
-- **Model Parameters**: Adjust Random Forest settings in `train.py`
-- **Grid Resolution**: Change grid density for more/fewer prediction points
-- **UI**: Customize Streamlit interface in `app.py`
 
-## 🧪 Testing
+* **Study Area**: Adjust coordinates in `train.py` for a different region.
+* **Model Hyperparameters**: Modify Random Forest settings in `train.py`.
+* **Grid Density**: Change the number of sample points for finer or coarser maps.
+* **UI Layout**: Customize widgets and styling in `app.py`.
 
-### Local Testing
+## Testing
+
+**Local**:
+
 ```bash
-# Test model training
+# Train the model
 python train.py
 
-# Test app functionality
+# Launch the app
 streamlit run app.py
-
-# Check if artifacts are created
-ls -la *.pkl *.csv
 ```
 
-### Container Testing
+**Container**:
+
 ```bash
-# Build container locally
+# Build image locally
 docker build -t owl-habitat .
 
 # Run container
 docker run -p 8080:8080 owl-habitat
 ```
 
-## 🤝 Contributing
+## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/your-feature`.
+3. Commit your changes: `git commit -m 'Add new feature'`.
+4. Push to origin and open a Pull Request.
 
-## 📜 License
+## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Licensed under the MIT License. See the `LICENSE` file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- **Data Sources**: Synthetic data based on known Great Gray Owl ecology
-- **Scientific Basis**: Research on owl habitat preferences in montane ecosystems
-- **Technology Stack**: Streamlit, scikit-learn, Google Cloud Run
-
-## 📞 Support
-
-- **Issues**: Use GitHub Issues for bug reports and feature requests
-- **Documentation**: This README and inline code comments
-- **Community**: Discussions tab for questions and ideas
-
----
-
-**Made with ❤️ for wildlife conservation and education**
+* Synthetic data generation based on Great Gray Owl ecology.
+* Environmental variables informed by ecological research.
+* iNaturalist API and computer vision pipeline for real-world observations.
+* Built with Streamlit, scikit-learn, and Google Cloud Run.
